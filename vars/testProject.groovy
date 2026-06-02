@@ -13,7 +13,7 @@ def call() {
         case "python":
             sh '''
             docker run --rm \
-                -v ${WORKSPACE}:/app \
+                -v $PWD:/app \
                 -w /app \
                 python:3.12 \
                 bash -c "pip install -r requirements.txt && pytest"
