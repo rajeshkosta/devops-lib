@@ -4,17 +4,14 @@ def call() {
 
         case "python":
 
-            def pythonRoot = ""
+            def pythonRoot = "."
 
-            // requirements.txt in repo root
-            if (fileExists("requirements.txt")) {
-                pythonRoot = "."
-            }
-            // requirements.txt in Application-Code
-            else if (fileExists("Application-Code/requirements.txt")) {
+            // Check if Python project is inside Application-Code
+            if (fileExists("Application-Code/requirements.txt")) {
                 pythonRoot = "Application-Code"
             }
-            else {
+            // Otherwise verify requirements.txt exists in root
+            else if (!fileExists("requirements.txt")) {
                 error """
 requirements.txt not found.
 
@@ -26,24 +23,43 @@ Expected one of:
 
             echo "Detected Python project root: ${pythonRoot}"
 
-            // Debug output
+            // Jenkins workspace debug
             sh """
-                echo "Current workspace:"
+                echo "===== WORKSPACE ====="
                 pwd
 
-                echo "Root contents:"
+                echo "===== ROOT CONTENTS ====="
                 ls -la
 
-                echo "Project contents:"
+                echo "===== PROJECT CONTENTS ====="
                 ls -la ${pythonRoot}
             """
 
+            // Docker debug
             sh """
-                docker run --rm \
-                -v \$PWD:/app \
-                -w /app/${pythonRoot} \
-                python:3.12 \
-                sh -c 'pip install -r requirements.txt && pytest'
+            docker run --rm \
+              -v \$PWD:/app \
+              -w /app/${pythonRoot} \
+              python:3.12 \
+              sh -c '
+                echo "===== INSIDE CONTAINER ====="
+                pwd
+                ls -la
+                echo "===== REQUIREMENTS ====="
+                cat requirements.txt
+              '
+            """
+
+            // Build & Test
+            sh """
+            docker run --rm \
+              -v \$PWD:/app \
+              -w /app/${pythonRoot} \
+              python:3.12 \
+              sh -c '
+                pip install -r requirements.txt &&
+                pytest
+              '
             """
 
             break
