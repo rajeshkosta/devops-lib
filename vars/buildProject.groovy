@@ -14,7 +14,7 @@ def call() {
             break
 
         case "python":
-            sh 'pip install -r requirements.txt'
+            sh 'python3 -m pip install -r requirements.txt'
             break
 
         case "go":
