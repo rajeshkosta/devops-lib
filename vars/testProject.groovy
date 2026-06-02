@@ -1,49 +1,54 @@
 def call() {
 
-    dir(env.APP_DIR ?: '.') {
+    switch(env.LANG) {
 
-        switch(env.LANG) {
+        case "python":
 
-            case "python":
+            def pythonRoot = "."
 
-                sh '''
-                if find . -name "test_*.py" -o -name "*_test.py" | grep -q .; then
-                    echo "Running Python tests..."
-                    pytest
-                else
-                    echo "No Python tests found. Skipping."
-                fi
-                '''
-                break
+            if (fileExists("Application-Code/requirements.txt")) {
+                pythonRoot = "Application-Code"
+            }
 
-            case "node":
+            sh """
+                docker run --rm \
+                  -v ${env.WORKSPACE}:/app \
+                  -w /app/${pythonRoot} \
+                  python:3.12 \
+                  sh -c '
+                    pip install -r requirements.txt
 
-                sh '''
-                if [ -f package.json ]; then
-                    echo "Running Node tests..."
-                    npm test || true
-                fi
-                '''
-                break
+                    if find . -name "test_*.py" -o -name "*_test.py" | grep -q .; then
+                        echo "Running Python tests..."
+                        pytest -v
+                    else
+                        echo "No Python tests found. Skipping."
+                    fi
+                  '
+            """
+            break
 
-            case "java":
 
-                sh '''
-                echo "Running Java tests..."
-                mvn test
-                '''
-                break
+        case "java":
 
-            case "go":
+            sh 'mvn test'
+            break
 
-                sh '''
-                echo "Running Go tests..."
-                go test ./...
-                '''
-                break
 
-            default:
-                echo "No test strategy defined for ${env.LANG}"
-        }
+        case "node":
+
+            sh 'npm test || true'
+            break
+
+
+        case "go":
+
+            sh 'go test ./...'
+            break
+
+
+        default:
+
+            echo "No tests configured for ${env.LANG}"
     }
 }
