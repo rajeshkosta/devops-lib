@@ -13,31 +13,30 @@ def call() {
             '''
             break
 
-        def call() {
+        case "python":
 
-    // detect python project location
-    def pythonRoot = ""
+            def pythonRoot = ""
 
-    if (fileExists("requirements.txt")) {
-        pythonRoot = "."
-    } 
-    else if (fileExists("Application-Code/requirements.txt")) {
-        pythonRoot = "Application-Code"
-    } 
-    else {
-        error "requirements.txt not found"
-    }
+            if (fileExists("requirements.txt")) {
+                pythonRoot = "."
+            } 
+            else if (fileExists("Application-Code/requirements.txt")) {
+                pythonRoot = "Application-Code"
+            } 
+            else {
+                error "requirements.txt not found"
+            }
 
-    echo "Python project root: ${pythonRoot}"
+            echo "Python project root: ${pythonRoot}"
 
-    sh """
-    docker run --rm \
-    -v \$PWD:/app \
-    -w /app/${pythonRoot} \
-    python:3.12 \
-    sh -c "pip install -r requirements.txt && pytest"
-    """
-}
+            sh """
+            docker run --rm \
+            -v \$PWD:/app \
+            -w /app/${pythonRoot} \
+            python:3.12 \
+            sh -c "pip install -r requirements.txt && pytest"
+            """
+            break
 
         case "go":
             sh '''
@@ -47,6 +46,6 @@ def call() {
             break
 
         default:
-            error("Unsupported language")
+            error "Unsupported language: ${env.LANG}"
     }
 }
