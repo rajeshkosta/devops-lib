@@ -11,7 +11,10 @@ def call() {
             break
 
         case "python":
-            sh 'pytest || true'
+            sh '''
+            . venv/bin/activate
+            pytest
+            '''
             break
 
         case "go":
