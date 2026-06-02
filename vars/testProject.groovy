@@ -12,8 +12,7 @@ def call() {
 
         case "python":
             sh '''
-            . venv/bin/activate
-            pytest
+            docker run --rm -v $PWD:/app -w /app python:3.12 bash -c "pip install -r requirements.txt && pytest"
             '''
             break
 
