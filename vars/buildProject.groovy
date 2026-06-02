@@ -15,10 +15,11 @@ def call() {
 
         case "python":
             sh '''
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install --upgrade pip
-            pip install -r requirements.txt
+            docker run --rm \
+                -v ${WORKSPACE}:/app \
+                -w /app \
+                python:3.12 \
+                sh -c "pip install -r requirements.txt && pytest"
             '''
             break
 
