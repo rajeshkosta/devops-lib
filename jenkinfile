@@ -1,0 +1,104 @@
+@Library('devops-lib') _
+
+pipeline {
+
+    agent any
+
+    environment {
+        IMAGE_NAME = "kosta/multi-lang-app"
+    }
+
+    stages {
+
+        stage('Detect Language') {
+            steps {
+                detectLanguage()
+            }
+        }
+
+        stage('Build') {
+            steps {
+                buildProject()
+            }
+        }
+
+        stage('Test') {
+            steps {
+                testProject()
+            }
+        }
+
+        stage('SonarQube') {
+            steps {
+                sonarScan()
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                qualityGate()
+            }
+        }
+
+        stage('Trivy FS Scan') {
+            steps {
+                trivyScan()
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                buildDocker(env.IMAGE_NAME)
+            }
+        }
+
+        stage('Image Scan') {
+            steps {
+                imageScan(env.IMAGE_NAME)
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                pushDocker(env.IMAGE_NAME)
+            }
+        }
+
+        stage('Deploy Dev') {
+            steps {
+                deployDev(env.IMAGE_NAME)
+            }
+        }
+
+        stage('OWASP ZAP') {
+            steps {
+                zapScan("http://dev.example.com")
+            }
+        }
+
+        stage('Approval') {
+            steps {
+                input "Deploy to Production?"
+            }
+        }
+
+        stage('Deploy Prod') {
+            steps {
+                deployProd(env.IMAGE_NAME)
+            }
+        }
+    }
+
+    post {
+
+        success {
+            slackNotify("SUCCESS")
+            emailNotify("SUCCESS")
+        }
+
+        failure {
+            slackNotify("FAILED")
+            emailNotify("FAILED")
+        }
+    }
+}
