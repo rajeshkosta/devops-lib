@@ -4,18 +4,19 @@ def call() {
 
         case "python":
 
-            def pythonRoot = ""
+            def pythonRoot = null
 
             // check root first
             if (fileExists("requirements.txt")) {
                 pythonRoot = "."
             }
-            // check Application-Code folder
+            // check Application-Code
             else if (fileExists("Application-Code/requirements.txt")) {
                 pythonRoot = "Application-Code"
             }
-            else {
-                error "requirements.txt not found in root or Application-Code"
+
+            if (pythonRoot == null) {
+                error "requirements.txt not found in root OR Application-Code"
             }
 
             echo "Detected Python project location: ${pythonRoot}"
@@ -26,7 +27,9 @@ def call() {
             -w /app/${pythonRoot} \
             python:3.12 \
             sh -c "
-                pip install -r requirements.txt && pytest
+                ls -la &&
+                pip install -r requirements.txt &&
+                pytest
             "
             """
 
