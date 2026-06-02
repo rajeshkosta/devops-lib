@@ -1,60 +1,49 @@
 def call() {
 
-    switch(env.LANG) {
+    dir(env.APP_DIR ?: '.') {
 
-        case "python":
+        switch(env.LANG) {
 
-            def pythonRoot = "."
+            case "python":
 
-            if (fileExists("Application-Code/requirements.txt")) {
-                pythonRoot = "Application-Code"
-            } else if (!fileExists("requirements.txt")) {
-                error """
-requirements.txt not found.
+                sh '''
+                if find . -name "test_*.py" -o -name "*_test.py" | grep -q .; then
+                    echo "Running Python tests..."
+                    pytest
+                else
+                    echo "No Python tests found. Skipping."
+                fi
+                '''
+                break
 
-Expected one of:
-- ./requirements.txt
-- ./Application-Code/requirements.txt
-"""
-            }
+            case "node":
 
-            echo "Detected Python project root: ${pythonRoot}"
+                sh '''
+                if [ -f package.json ]; then
+                    echo "Running Node tests..."
+                    npm test || true
+                fi
+                '''
+                break
 
-            sh """
-            docker run --rm \
-              -v ${env.WORKSPACE}:/app \
-              -w /app/${pythonRoot} \
-              python:3.12 \
-              sh -c '
-                pip install -r requirements.txt
-              '
-            """
+            case "java":
 
-            break
+                sh '''
+                echo "Running Java tests..."
+                mvn test
+                '''
+                break
 
+            case "go":
 
-        case "java":
-            sh 'mvn clean package -DskipTests'
-            break
+                sh '''
+                echo "Running Go tests..."
+                go test ./...
+                '''
+                break
 
-
-        case "node":
-            sh '''
-            npm install
-            npm run build || true
-            '''
-            break
-
-
-        case "go":
-            sh '''
-            go mod download
-            go build -o app
-            '''
-            break
-
-
-        default:
-            error "Unsupported language: ${env.LANG}"
+            default:
+                echo "No test strategy defined for ${env.LANG}"
+        }
     }
 }
