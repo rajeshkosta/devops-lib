@@ -4,22 +4,23 @@ def call() {
 
         case "python":
 
-            def pythonRoot = null
+            // 🔍 REAL AUTO DETECTION (no hardcoding)
+            def reqFile = sh(
+                script: "find . -type f -name requirements.txt | head -n 1",
+                returnStdout: true
+            ).trim()
 
-            // check root first
-            if (fileExists("requirements.txt")) {
+            if (reqFile == "") {
+                error "requirements.txt not found anywhere in workspace"
+            }
+
+            // extract folder path
+            def pythonRoot = reqFile.replace("/requirements.txt", "")
+            if (pythonRoot == "requirements.txt") {
                 pythonRoot = "."
             }
-            // check Application-Code
-            else if (fileExists("Application-Code/requirements.txt")) {
-                pythonRoot = "Application-Code"
-            }
 
-            if (pythonRoot == null) {
-                error "requirements.txt not found in root OR Application-Code"
-            }
-
-            echo "Detected Python project location: ${pythonRoot}"
+            echo "Detected Python project root: ${pythonRoot}"
 
             sh """
             docker run --rm \
@@ -37,11 +38,13 @@ def call() {
 
 
         case "java":
+            echo "Building Java project..."
             sh 'mvn clean package -DskipTests'
             break
 
 
         case "node":
+            echo "Building Node project..."
             sh '''
             npm install
             npm run build || true
@@ -50,6 +53,7 @@ def call() {
 
 
         case "go":
+            echo "Building Go project..."
             sh '''
             go mod download
             go build -o app
