@@ -4,34 +4,46 @@ def call() {
 
         case "python":
 
-            // 🔍 REAL AUTO DETECTION (no hardcoding)
-            def reqFile = sh(
-                script: "find . -type f -name requirements.txt | head -n 1",
-                returnStdout: true
-            ).trim()
+            def pythonRoot = ""
 
-            if (reqFile == "") {
-                error "requirements.txt not found anywhere in workspace"
-            }
-
-            // extract folder path
-            def pythonRoot = reqFile.replace("/requirements.txt", "")
-            if (pythonRoot == "requirements.txt") {
+            // requirements.txt in repo root
+            if (fileExists("requirements.txt")) {
                 pythonRoot = "."
+            }
+            // requirements.txt in Application-Code
+            else if (fileExists("Application-Code/requirements.txt")) {
+                pythonRoot = "Application-Code"
+            }
+            else {
+                error """
+requirements.txt not found.
+
+Expected one of:
+- ./requirements.txt
+- ./Application-Code/requirements.txt
+"""
             }
 
             echo "Detected Python project root: ${pythonRoot}"
 
+            // Debug output
             sh """
-            docker run --rm \
-            -v \$PWD:/app \
-            -w /app/${pythonRoot} \
-            python:3.12 \
-            sh -c "
-                ls -la &&
-                pip install -r requirements.txt &&
-                pytest
-            "
+                echo "Current workspace:"
+                pwd
+
+                echo "Root contents:"
+                ls -la
+
+                echo "Project contents:"
+                ls -la ${pythonRoot}
+            """
+
+            sh """
+                docker run --rm \
+                -v \$PWD:/app \
+                -w /app/${pythonRoot} \
+                python:3.12 \
+                sh -c 'pip install -r requirements.txt && pytest'
             """
 
             break
